@@ -5,3 +5,8 @@ color: red
 h2 {
 color: green
 }
+
+.nav-item
+{
+    margin-left: 20px;
+}

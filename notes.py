@@ -1,4 +1,4 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, redirect
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField, TextAreaField
 from wtforms.validators import DataRequired
@@ -39,7 +39,13 @@ def new_form():
         data = Notes(title=title, text=text)
         db.session.add(data)
         db.session.commit()
+        return redirect('/view_form')
     return render_template('new_form.html', form=form)
+
+
+@app.route('/view_form')
+def view_form():
+    return render_template('view_forms.html', view_data=Notes.query.all())
 
 
 if __name__ == '__main__':
