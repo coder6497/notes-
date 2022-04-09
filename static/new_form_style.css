@@ -5,4 +5,6 @@ color: red
 textarea
 {
    font-size: 20px;
+   height: 500px;
+   width: 500px;
 }

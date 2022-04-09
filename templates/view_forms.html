@@ -1,10 +1,9 @@
 {% extends "base.html" %}
 
 {%block title%}
-    Главная
+    Ваши заметки
 {%endblock%}
 {%block body%}
-    <link rel="stylesheet" href="{{url_for('static', filename='new_form_style.css')}}">
     <h1 class="title_page">Ваши заметки</h1>
     {% for data in view_data %}
         <div class="my-3 p-3 bg-body rounded shadow-sm">
@@ -15,6 +14,9 @@
               <p class="pb-3 mb-0 small lh-sm border-bottom">
                 <strong class="d-block text-gray-dark">{{ data.title }}</strong>
                 {{ data.text }}
+                  <form method="post" action="#">
+                        <a type="submit" name="delete" href="/delete_form/{{ data.id }}" class="btn btn-danger">Удалить</a>
+                  </form>
           </div>
     {% endfor %}
-{%endblock%}
+{% endblock %}

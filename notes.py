@@ -43,9 +43,17 @@ def new_form():
     return render_template('new_form.html', form=form)
 
 
-@app.route('/view_form')
+@app.route('/view_form', methods=['GET', 'POST'])
 def view_form():
     return render_template('view_forms.html', view_data=Notes.query.all())
+
+
+@app.route('/delete_form/<int:id>')
+def delete_form(id):
+    form_to_delete = Notes.query.filter_by(id=id).first()
+    db.session.delete(form_to_delete)
+    db.session.commit()
+    return redirect('/view_form')
 
 
 if __name__ == '__main__':
