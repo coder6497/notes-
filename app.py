@@ -5,7 +5,6 @@ from wtforms import StringField, SubmitField, TextAreaField, FileField
 from wtforms.validators import DataRequired
 from flask_sqlalchemy import SQLAlchemy
 import os
-import time
 
 
 app = Flask(__name__)
@@ -45,26 +44,19 @@ def main():
 def new_form():
     form = Form()
     if form.validate_on_submit():
-        title = form.title.data
-        text = form.text.data
-        data = Notes(title=title, text=text)
-        db.session.add(data)
-        db.session.commit()
-        photo_save()
-        return redirect('/view_form')
-    return render_template('new_form.html', form=form)
-
-
-def photo_save():
-    try:
-        form = Form()
-        if form.validate_on_submit():
+        try:
+            title = form.title.data
+            text = form.text.data
             photos.save(form.image.data)
             img_dir = list(map(lambda x: 'images/' + x, os.listdir('images')))
             sorted_by_time = sorted(img_dir, key=lambda x: os.path.getctime(x), reverse=True)
-            print(sorted_by_time)
-    except Exception:
-        pass
+            data = Notes(title=title, text=text, image_path=sorted_by_time[0])
+            db.session.add(data)
+            db.session.commit()
+            return redirect('/view_form')
+        except Exception:
+            pass
+    return render_template('new_form.html', form=form)
 
 
 @app.route('/view_form', methods=['GET', 'POST'])
