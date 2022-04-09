@@ -10,12 +10,12 @@
     <form method="post" action="">
         {{ form.csrf_token() }}
         {{ form.title.label() }}
-        {{ form.title() }}
+        {{ form.title(class="form-control") }}
         <br>
         {{ form.text.label() }}
         <br>
-        {{ form.text() }}
+        {{ form.text(class="form-control") }}
         <br>
-        {{ form.submit() }}
+        {{ form.submit(class="btn btn-info") }}
     </form>
 {%endblock%}
