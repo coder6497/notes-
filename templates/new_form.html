@@ -7,7 +7,7 @@
 {%block body%}
 <link rel="stylesheet" href="{{url_for('static', filename='new_form_style.css')}}">
     <h1 class="title_page">Новая заметка</h1>
-    <form method="post" action="">
+    <form method="post" action="" enctype="multipart/form-data">
         {{ form.csrf_token() }}
         {{ form.title.label() }}
         {{ form.title(class="form-control") }}
@@ -17,5 +17,6 @@
         {{ form.text(class="form-control") }}
         <br>
         {{ form.submit(class="btn btn-info") }}
+        {{ form.image(class="btn btn-warning") }}
     </form>
 {%endblock%}
