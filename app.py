@@ -1,16 +1,17 @@
-from flask import Flask, render_template, redirect
-from flask_wtf import FlaskForm
-from flask_uploads import UploadSet, configure_uploads, IMAGES, patch_request_class
-from wtforms import StringField, SubmitField, TextAreaField, FileField
-from wtforms.validators import DataRequired
-from flask_sqlalchemy import SQLAlchemy
 import os
 
+from flask import Flask, render_template, redirect
+from flask_sqlalchemy import SQLAlchemy
+from flask_uploads import UploadSet, configure_uploads, IMAGES, patch_request_class
+from flask_wtf import FlaskForm
+from wtforms import StringField, SubmitField, TextAreaField, FileField
+from wtforms.validators import DataRequired
+from PIL import Image
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'key'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///notes_base.db'
-app.config['UPLOADED_PHOTOS_DEST'] = os.path.join(os.getcwd(), 'images')
+app.config['UPLOADED_PHOTOS_DEST'] = os.path.join(os.getcwd(), 'static/images')
 db = SQLAlchemy(app)
 
 photos = UploadSet('photos', IMAGES)
@@ -25,11 +26,15 @@ class Form(FlaskForm):
     submit = SubmitField("Сохранить")
 
 
+class ImageForm(FlaskForm):
+    image = FileField()
+    submit = SubmitField("Сохранить")
+
+
 class Notes(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String())
     text = db.Column(db.String())
-    image_path = db.Column(db.String())
 
     def __repr__(self):
         return "<Notes {}r>".format(self.id)
@@ -44,18 +49,12 @@ def main():
 def new_form():
     form = Form()
     if form.validate_on_submit():
-        try:
-            title = form.title.data
-            text = form.text.data
-            photos.save(form.image.data)
-            img_dir = list(map(lambda x: 'images/' + x, os.listdir('images')))
-            sorted_by_time = sorted(img_dir, key=lambda x: os.path.getctime(x), reverse=True)
-            data = Notes(title=title, text=text, image_path=sorted_by_time[0])
-            db.session.add(data)
-            db.session.commit()
-            return redirect('/view_form')
-        except Exception:
-            pass
+        title = form.title.data
+        text = form.text.data
+        data = Notes(title=title, text=text)
+        db.session.add(data)
+        db.session.commit()
+        return redirect('/view_form')
     return render_template('new_form.html', form=form)
 
 
@@ -72,5 +71,21 @@ def delete_form(id):
     return redirect('/view_form')
 
 
+@app.route('/view_images', methods=["POST", "GET"])
+def view_images():
+    image_form = ImageForm()
+    if image_form.validate_on_submit():
+        photos.save(image_form.image.data)
+        return redirect('/view_images')
+    img_lst = list(map(lambda x: x, os.listdir('static/images')))
+    for img in img_lst:
+        image = Image.open('static/images/' + img)
+        size = (200, 200)
+        image.thumbnail(size)
+        image.save('static/resized_images/' + img)
+    min_lst = list(map(lambda x: 'static/resized_images/' + x, os.listdir('static/resized_images')))
+    return render_template('view_images.html', image_form=image_form, min_lst=min_lst)
+
+
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, host="0.0.0.0", port=8008)
