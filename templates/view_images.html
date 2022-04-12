@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}
+    Форма
+{% endblock %}
+
+{% block body %}
+<h1>Ваши изображения</h1>
+<form method="post" action="" enctype="multipart/form-data">
+    {{ image_form.csrf_token() }}
+    {{ image_form.image(class="btn btn-warning") }}
+    {{ image_form.submit(class="btn btn-info") }}
+</form>
+{% for path in min_lst %}
+    <img src="{{ path }}">
+    <form method="post" action="#">
+        <a type="submit" name="delete" href="/delete_image/{{ path.split('/') }}" class="btn btn-danger">Удалить</a>
+    </form>
+{% endfor %}
+{% for name in name_lst %}
+    <ul><h6><li>{{ name }}</li></h6></ul>
+{% endfor %}
+{% endblock %}

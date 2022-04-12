@@ -1,12 +1,12 @@
 import os
 
+from PIL import Image
 from flask import Flask, render_template, redirect
 from flask_sqlalchemy import SQLAlchemy
-from flask_uploads import UploadSet, configure_uploads, IMAGES, patch_request_class
+from flask_uploads import UploadSet, configure_uploads, IMAGES, patch_request_class, UploadNotAllowed
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField, TextAreaField, FileField
 from wtforms.validators import DataRequired
-from PIL import Image
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'key'
@@ -75,8 +75,11 @@ def delete_form(id):
 def view_images():
     image_form = ImageForm()
     if image_form.validate_on_submit():
-        photos.save(image_form.image.data)
-        return redirect('/view_images')
+        try:
+            photos.save(image_form.image.data)
+            return redirect('/view_images')
+        except UploadNotAllowed:
+            pass
     img_lst = list(map(lambda x: x, os.listdir('static/images')))
     for img in img_lst:
         image = Image.open('static/images/' + img)
@@ -84,7 +87,17 @@ def view_images():
         image.thumbnail(size)
         image.save('static/resized_images/' + img)
     min_lst = list(map(lambda x: 'static/resized_images/' + x, os.listdir('static/resized_images')))
-    return render_template('view_images.html', image_form=image_form, min_lst=min_lst)
+    name_lst = os.listdir('static/images')
+    return render_template('view_images.html', image_form=image_form, min_lst=min_lst, name_lst=name_lst)
+
+
+@app.route('/delete_image/<string:path>')
+def delete_image(path):
+    img_path_orig = eval(path)
+    img_path_min = '/'.join(eval(path))
+    os.remove('static/images/' + img_path_orig[-1])
+    os.remove(img_path_min)
+    return redirect('/view_images')
 
 
 if __name__ == '__main__':
