@@ -83,8 +83,7 @@ def view_images():
     img_lst = list(map(lambda x: x, os.listdir('static/images')))
     for img in img_lst:
         image = Image.open('static/images/' + img)
-        size = (200, 200)
-        image.thumbnail(size)
+        image.thumbnail((200, 200))
         image.save('static/resized_images/' + img)
     min_lst = list(map(lambda x: 'static/resized_images/' + x, os.listdir('static/resized_images')))
     name_lst = os.listdir('static/images')
