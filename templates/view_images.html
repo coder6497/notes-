@@ -12,10 +12,13 @@
     {{ image_form.submit(class="btn btn-info") }}
 </form>
 {% for path in min_lst %}
-    <img src="{{ path }}">
-    <form method="post" action="#">
-        <a type="submit" name="delete" href="/delete_image/{{ path.split('/') }}" class="btn btn-danger">Удалить</a>
-    </form>
+    <div class="alert alert-secondary" role="alert">
+        <img src="{{ path }}">
+        <form method="post" action="#">
+            <a type="submit" name="delete" href="/delete_image/{{ path.split('/') }}" class="btn btn-danger">Удалить</a>
+            <a type="submit" name="original" href="/detalied_image/{{ path.split('/') }}" class="btn btn-info">Подробнее</a>
+        </form>
+    </div>
 {% endfor %}
 {% for name in name_lst %}
     <ul><h6><li>{{ name }}</li></h6></ul>

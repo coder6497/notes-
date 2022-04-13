@@ -1,4 +1,5 @@
 import os
+import time
 
 from PIL import Image
 from flask import Flask, render_template, redirect
@@ -22,7 +23,6 @@ patch_request_class(app, None)
 class Form(FlaskForm):
     title = StringField("Заголовок", validators=[DataRequired()])
     text = TextAreaField("Текст", validators=[DataRequired()])
-    image = FileField()
     submit = SubmitField("Сохранить")
 
 
@@ -99,5 +99,19 @@ def delete_image(path):
     return redirect('/view_images')
 
 
+@app.route('/detalied_image/<string:path>')
+def detailed_image(path):
+    res_img_path = eval(path)
+    res_img_path[1] = 'images'
+    orig_image_path = '/'.join(res_img_path)
+    about = {}
+    about['Название'] = res_img_path[-1]
+    about["Время создания"] = time.ctime(os.path.getctime(orig_image_path))
+    about['Разрешение'] = Image.open(orig_image_path).size
+    about["Размер"] = str(round(os.stat(orig_image_path).st_size / 1024)) + 'КБ'
+    print(about)
+    return render_template('detalied_img.html', orig_image_path=orig_image_path, res_img_path=res_img_path, about=about)
+
+
 if __name__ == '__main__':
-    app.run(debug=True, host="0.0.0.0", port=8008)
+    app.run(debug=True, host="0.0.0.0", port=8808)
