@@ -17,7 +17,6 @@ db = SQLAlchemy(app)
 
 photos = UploadSet('photos', IMAGES)
 configure_uploads(app, photos)
-patch_request_class(app, None)
 
 
 class Form(FlaskForm):
