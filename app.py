@@ -4,7 +4,7 @@ import time
 from PIL import Image
 from flask import Flask, render_template, redirect
 from flask_sqlalchemy import SQLAlchemy
-from flask_uploads import UploadSet, configure_uploads, IMAGES, patch_request_class, UploadNotAllowed
+from flask_uploads import UploadSet, configure_uploads, IMAGES, UploadNotAllowed
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField, TextAreaField, FileField
 from wtforms.validators import DataRequired
