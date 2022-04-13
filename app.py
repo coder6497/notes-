@@ -42,7 +42,9 @@ class Notes(db.Model):
 
 @app.route('/')
 def main():
-    return render_template('main.html')
+    sorted_img_lst = sorted(list(map(lambda x: 'static/resized_images/' + x, os.listdir('static/resized_images'))),
+                            key=lambda x: os.path.getctime(x), reverse=True)
+    return render_template('main.html', sorted_img_lst=sorted_img_lst)
 
 
 @app.route('/new_form', methods=['POST', 'GET'])
@@ -109,7 +111,6 @@ def detailed_image(path):
     about["Время создания"] = time.ctime(os.path.getctime(orig_image_path))
     about['Разрешение'] = Image.open(orig_image_path).size
     about["Размер"] = str(round(os.stat(orig_image_path).st_size / 1024)) + 'КБ'
-    print(about)
     return render_template('detalied_img.html', orig_image_path=orig_image_path, res_img_path=res_img_path, about=about)
 
 

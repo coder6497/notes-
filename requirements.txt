@@ -1,5 +1,5 @@
 flask
-flask_uploads
+flask_reuploaded
 flask_wtf
 flask_sqlalchemy
 pillow
