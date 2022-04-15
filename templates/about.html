@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block title %}
+    О вас
+{% endblock %}
+
+{% block body %}
+    <h1>О вас {{ user.login }}</h1>
+    <div class="alert alert-info" role="alert">
+        {% for key, value in about_user.items() %}
+            <ul><li><font size="5">{{ key }}: </font>{{ value }}</li></ul>
+        {% endfor %}
+    </div>
+{% endblock %}

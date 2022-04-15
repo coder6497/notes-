@@ -7,7 +7,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_uploads import UploadSet, configure_uploads, IMAGES, UploadNotAllowed
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField, TextAreaField, FileField, PasswordField, BooleanField
-from wtforms.validators import DataRequired
+from wtforms.validators import DataRequired, EqualTo
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import LoginManager, UserMixin, login_required, login_user, current_user, logout_user
 
@@ -21,6 +21,11 @@ login_manager.login_view = 'login'
 
 photos = UploadSet('photos', IMAGES)
 configure_uploads(app, photos)
+try:
+    os.mkdir('static/images')
+    os.mkdir('static/resized_images')
+except FileExistsError:
+    pass
 
 
 class Form(FlaskForm):
@@ -48,6 +53,14 @@ class LoginForm(FlaskForm):
     password = PasswordField("Пароль: ", validators=[DataRequired()])
     remember = BooleanField("Запомнить меня")
     submit = SubmitField("Войти")
+
+
+class RegistrtionForm(FlaskForm):
+    login = StringField("Логин: ", validators=[DataRequired()])
+    email = StringField("Email: ", validators=[DataRequired()])
+    password = PasswordField('Пароль: ', validators=[DataRequired()])
+    repeat_password = PasswordField('Повторите пароль', validators=[DataRequired(), EqualTo('password')])
+    submit = SubmitField("Зарегестрироваться")
 
 
 class User(db.Model, UserMixin):
@@ -170,6 +183,29 @@ def login():
 def logout():
     logout_user()
     return redirect('/login')
+
+
+@app.route('/regist', methods=["GET", "POST"])
+def registration():
+    form = RegistrtionForm()
+    if form.validate_on_submit():
+        login = form.login.data
+        email = form.email.data
+        password = form.password.data
+        user = User(login=login, email=email)
+        user.set_password(password)
+        db.session.add(user)
+        db.session.commit()
+        return redirect('/')
+    return render_template('registration.html', form=form)
+
+
+@app.route('/about', methods=["GET", "POST"])
+def about():
+    about_user = {}
+    about_user["Логин"] = current_user.login
+    about_user["Почта"] = current_user.email
+    return render_template('about.html', user=current_user, about_user=about_user)
 
 
 if __name__ == '__main__':
