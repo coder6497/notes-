@@ -21,21 +21,21 @@
       {{ form.csrf_token() }}
       {{ form.login.label() }}
       <br>
-      {{ form.login() }}
+      {{ form.login(class="form-control") }}
       <br>
       {{ form.email.label() }}
       <br>
-      {{ form.email() }}
+      {{ form.email(class="form-control") }}
       <br>
       {{ form.password.label() }}
       <br>
-      {{ form.password() }}
+      {{ form.password(class="form-control") }}
       <br>
       {{ form.repeat_password.label() }}
       <br>
-      {{ form.repeat_password() }}
+      {{ form.repeat_password(class="form-control") }}
       <br>
-      {{ form.submit() }}
+      {{ form.submit(class="btn btn-info") }}
     </form>
 </div>
 </body>

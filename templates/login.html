@@ -20,16 +20,16 @@
         {{ form.csrf_token() }}
         {{ form.login.label() }}
         <br>
-        {{ form.login() }}
+        {{ form.login(class="form-control") }}
         <br>
         {{ form.password.label() }}
         <br>
-        {{ form.password() }}
+        {{ form.password(class="form-control") }}
         <br>
         {{ form.remember() }}
         {{ form.remember.label() }}
         <br>
-        {{ form.submit() }}
+        {{ form.submit(class="btn btn-info") }}
     </form>
 </div>
 </body>

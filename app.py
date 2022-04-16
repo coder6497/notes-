@@ -43,6 +43,7 @@ class Notes(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String())
     text = db.Column(db.String())
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
 
     def __repr__(self):
         return "<Notes %sr>".format(self.id)
@@ -68,6 +69,7 @@ class User(db.Model, UserMixin):
     login = db.Column(db.String())
     email = db.Column(db.String())
     password_hash = db.Column(db.String())
+    user_notes = db.relationship('Notes')
 
     def __repr__(self):
         return "<{}:{}>".format(self.id, self.login)
@@ -92,14 +94,12 @@ def main():
     return render_template('main.html', sorted_img_lst=sorted_img_lst)
 
 
-@app.route('/new_form', methods=['POST', 'GET'])
+@app.route('/new_form/', methods=['POST', 'GET'])
 @login_required
 def new_form():
     form = Form()
     if form.validate_on_submit():
-        title = form.title.data
-        text = form.text.data
-        data = Notes(title=title, text=text)
+        data = Notes(title=form.title.data, text=form.text.data, user_id=current_user.id)
         db.session.add(data)
         db.session.commit()
         return redirect('/view_form')
@@ -109,7 +109,7 @@ def new_form():
 @app.route('/view_form', methods=['GET', 'POST'])
 @login_required
 def view_form():
-    return render_template('view_forms.html', view_data=Notes.query.all())
+    return render_template('view_forms.html', user=current_user)
 
 
 @app.route('/delete_form/<int:id>')
