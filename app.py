@@ -1,20 +1,21 @@
+import base64
 import os
 import time
 
 from PIL import Image
 from flask import Flask, render_template, redirect
+from flask_login import LoginManager, UserMixin, login_required, login_user, current_user, logout_user
 from flask_sqlalchemy import SQLAlchemy
 from flask_uploads import UploadSet, configure_uploads, IMAGES, UploadNotAllowed
 from flask_wtf import FlaskForm
+from werkzeug.security import generate_password_hash, check_password_hash
 from wtforms import StringField, SubmitField, TextAreaField, FileField, PasswordField, BooleanField
 from wtforms.validators import DataRequired, EqualTo
-from werkzeug.security import generate_password_hash, check_password_hash
-from flask_login import LoginManager, UserMixin, login_required, login_user, current_user, logout_user
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'key'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///notes_base.db'
-app.config['UPLOADED_PHOTOS_DEST'] = os.path.join(os.getcwd(), 'static/images')
+app.config['UPLOADED_PHOTOS_DEST'] = os.path.join(os.getcwd(), f'static/images/')
 db = SQLAlchemy(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
@@ -46,7 +47,17 @@ class Notes(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
 
     def __repr__(self):
-        return "<Notes %sr>".format(self.id)
+        return "<Notes {}r>".format(self.id)
+
+
+class Images(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    original = db.Column(db.String())
+    minimal = db.Column(db.String())
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+
+    def __repr__(self):
+        return "<Images {}r>".format(self.id)
 
 
 class LoginForm(FlaskForm):
@@ -70,6 +81,7 @@ class User(db.Model, UserMixin):
     email = db.Column(db.String())
     password_hash = db.Column(db.String())
     user_notes = db.relationship('Notes')
+    user_images = db.relationship('Images')
 
     def __repr__(self):
         return "<{}:{}>".format(self.id, self.login)
@@ -89,9 +101,10 @@ def load_user(user_id):
 @app.route('/')
 @login_required
 def main():
-    sorted_img_lst = sorted(list(map(lambda x: 'static/resized_images/' + x, os.listdir('static/resized_images'))),
-                            key=lambda x: os.path.getctime(x), reverse=True)
-    return render_template('main.html', sorted_img_lst=sorted_img_lst)
+    if len(os.listdir('static/images')) or len(os.listdir('static/resized_images')) > 5:
+        list(map(lambda x: os.remove('static/images/' + x), os.listdir('static/images')))
+        list(map(lambda x: os.remove('static/resized_images/' + x), os.listdir('static/resized_images')))
+    return render_template('main.html')
 
 
 @app.route('/new_form/', methods=['POST', 'GET'])
@@ -128,26 +141,28 @@ def view_images():
     if image_form.validate_on_submit():
         try:
             photos.save(image_form.image.data)
+            with open('static/images/' + os.listdir('static/images')[0], 'rb') as f:
+                image = base64.b64encode(f.read()).decode('utf-8')
+            mini_img = Image.open('static/images/' + os.listdir('static/images')[0])
+            mini_img.thumbnail((200, 200))
+            mini_img.save('static/resized_images/' + os.listdir('static/images')[0])
+            with open('static/resized_images/' + os.listdir('static/resized_images')[0], 'rb') as f:
+                res_img = base64.b64encode(f.read()).decode('utf-8')
+            images = Images(original=image, minimal=res_img, user_id=current_user.id)
+            db.session.add(images)
+            db.session.commit()
             return redirect('/view_images')
         except UploadNotAllowed:
             pass
-    img_lst = list(map(lambda x: x, os.listdir('static/images')))
-    for img in img_lst:
-        image = Image.open('static/images/' + img)
-        image.thumbnail((200, 200))
-        image.save('static/resized_images/' + img)
-    min_lst = list(map(lambda x: 'static/resized_images/' + x, os.listdir('static/resized_images')))
-    name_lst = os.listdir('static/images')
-    return render_template('view_images.html', image_form=image_form, min_lst=min_lst, name_lst=name_lst)
+    return render_template('view_images.html', image_form=image_form, user_images=current_user.user_images)
 
 
-@app.route('/delete_image/<string:path>')
+@app.route('/delete_image/<int:id>')
 @login_required
-def delete_image(path):
-    img_path_orig = eval(path)
-    img_path_min = '/'.join(eval(path))
-    os.remove('static/images/' + img_path_orig[-1])
-    os.remove(img_path_min)
+def delete_image(id):
+    img_to_delete = Images.query.filter_by(id=id).first()
+    db.session.delete(img_to_delete)
+    db.session.commit()
     return redirect('/view_images')
 
 
@@ -167,6 +182,7 @@ def detailed_image(path):
 
 @app.route('/login', methods=["GET", "POST"])
 def login():
+    global user_list
     form = LoginForm()
     if form.validate_on_submit():
         user = db.session.query(User).filter(User.login == form.login.data).first()
@@ -209,4 +225,4 @@ def about():
 
 
 if __name__ == '__main__':
-    app.run(debug=True, host="0.0.0.0", port=int(os.environ.get('PORT', 5000)))
+    app.run(debug=True, host="0.0.0.0", port=int(os.environ.get('PORT', 5500)))

@@ -11,16 +11,8 @@
     {{ image_form.image(class="btn btn-warning") }}
     {{ image_form.submit(class="btn btn-info") }}
 </form>
-{% for path in min_lst %}
-    <div class="alert alert-secondary" role="alert">
-        <img src="{{ path }}">
-        <form method="post" action="#">
-            <a type="submit" name="delete" href="/delete_image/{{ path.split('/') }}" class="btn btn-danger">Удалить</a>
-            <a type="submit" name="original" href="/detalied_image/{{ path.split('/') }}" class="btn btn-info">Подробнее</a>
-        </form>
-    </div>
-{% endfor %}
-{% for name in name_lst %}
-    <ul><h6><li>{{ name }}</li></h6></ul>
+{% for imgs in user_images %}
+    <img src="data:image/png;base64, {{ imgs.minimal }}">
+    <a type="submit" name="delete" href="/delete_image/{{ imgs.id }}" class="btn btn-danger">Удалить</a>
 {% endfor %}
 {% endblock %}
