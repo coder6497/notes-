@@ -145,20 +145,24 @@ def view_images():
     if image_form.validate_on_submit():
         try:
             photos.save(image_form.image.data)
-            with open('static/images/' + os.listdir('static/images')[0], 'rb') as f:
+            list_orig = sorted(os.listdir('static/images'), key=lambda x: os.path.getctime('static/images/' + x),
+                               reverse=True)
+            with open('static/images/' + list_orig[0], 'rb') as f:
                 image = base64.b64encode(f.read()).decode('utf-8')
-            mini_img = Image.open('static/images/' + os.listdir('static/images')[0])
+            mini_img = Image.open('static/images/' + list_orig[0])
             mini_img.thumbnail((200, 200))
-            mini_img.save('static/resized_images/' + os.listdir('static/images')[0])
-            with open('static/resized_images/' + os.listdir('static/resized_images')[0], 'rb') as f:
+            mini_img.save('static/resized_images/' + list_orig[0])
+            list_mini = sorted(os.listdir('static/resized_images'),
+                               key=lambda x: os.path.getctime('static/resized_images/' + x), reverse=True)
+            with open('static/resized_images/' + list_mini[0], 'rb') as f:
                 res_img = base64.b64encode(f.read()).decode('utf-8')
             images = Images(original=image,
                             minimal=res_img,
-                            time=time.ctime(os.path.getctime('static/images/' + os.listdir('static/images')[0])),
-                            name=os.path.basename('static/images/' + os.listdir('static/images')[0]),
-                            size=str(Image.open('static/images/' + os.listdir('static/images')[0]).size),
+                            time=time.ctime(os.path.getctime('static/images/' + list_orig[0])),
+                            name=os.path.basename('static/images/' + list_orig[0]),
+                            size=str(Image.open('static/images/' + list_mini[0]).size),
                             size_on_disk=str(round(
-                                os.stat('static/images/' + os.listdir('static/images')[0]).st_size / 1024)) + "КБ",
+                                os.stat('static/images/' + list_orig[0]).st_size / 1024)) + "КБ",
                             user_id=current_user.id)
             db.session.add(images)
             db.session.commit()
