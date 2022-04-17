@@ -2,5 +2,6 @@ flask
 flask_reuploaded
 flask_wtf
 flask_sqlalchemy
+flask_login
 pillow
 gunicorn
