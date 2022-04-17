@@ -14,5 +14,6 @@
 {% for imgs in user_images %}
     <img src="data:image/png;base64, {{ imgs.minimal }}">
     <a type="submit" name="delete" href="/delete_image/{{ imgs.id }}" class="btn btn-danger">Удалить</a>
+    <a type="submit" name="delete" href="/detalied_image/{{ imgs.id }}" class="btn btn-info">Подробнее</a>
 {% endfor %}
 {% endblock %}

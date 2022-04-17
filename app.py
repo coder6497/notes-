@@ -54,6 +54,10 @@ class Images(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     original = db.Column(db.String())
     minimal = db.Column(db.String())
+    time = db.Column(db.String())
+    name = db.Column(db.String())
+    size = db.Column(db.String())
+    size_on_disk = db.Column(db.String())
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
 
     def __repr__(self):
@@ -148,7 +152,14 @@ def view_images():
             mini_img.save('static/resized_images/' + os.listdir('static/images')[0])
             with open('static/resized_images/' + os.listdir('static/resized_images')[0], 'rb') as f:
                 res_img = base64.b64encode(f.read()).decode('utf-8')
-            images = Images(original=image, minimal=res_img, user_id=current_user.id)
+            images = Images(original=image,
+                            minimal=res_img,
+                            time=time.ctime(os.path.getctime('static/images/' + os.listdir('static/images')[0])),
+                            name=os.path.basename('static/images/' + os.listdir('static/images')[0]),
+                            size=str(Image.open('static/images/' + os.listdir('static/images')[0]).size),
+                            size_on_disk=str(round(
+                                os.stat('static/images/' + os.listdir('static/images')[0]).st_size / 1024)) + "КБ",
+                            user_id=current_user.id)
             db.session.add(images)
             db.session.commit()
             return redirect('/view_images')
@@ -166,23 +177,20 @@ def delete_image(id):
     return redirect('/view_images')
 
 
-@app.route('/detalied_image/<string:path>')
+@app.route('/detalied_image/<int:id>')
 @login_required
-def detailed_image(path):
-    res_img_path = eval(path)
-    res_img_path[1] = 'images'
-    orig_image_path = '/'.join(res_img_path)
+def detailed_image(id):
+    img_to_show = Images.query.filter_by(id=id).first()
     about = {}
-    about['Название'] = res_img_path[-1]
-    about["Время создания"] = time.ctime(os.path.getctime(orig_image_path))
-    about['Разрешение'] = Image.open(orig_image_path).size
-    about["Размер"] = str(round(os.stat(orig_image_path).st_size / 1024)) + 'КБ'
-    return render_template('detalied_img.html', orig_image_path=orig_image_path, res_img_path=res_img_path, about=about)
+    about["Имя"] = img_to_show.name
+    about["Разрешение"] = img_to_show.size
+    about["Размер"] = img_to_show.size_on_disk
+    about["Время создания"] = img_to_show.time
+    return render_template('detalied_img.html', images=img_to_show, about=about)
 
 
 @app.route('/login', methods=["GET", "POST"])
 def login():
-    global user_list
     form = LoginForm()
     if form.validate_on_submit():
         user = db.session.query(User).filter(User.login == form.login.data).first()
