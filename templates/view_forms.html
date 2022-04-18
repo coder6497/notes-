@@ -6,6 +6,9 @@
 {%block body%}
     <h1 class="title_page">Ваши заметки</h1>
     <a type="submit" href="/view_images" class="btn btn-success">Посмотреть изображения</a>
+    <br>
+    <br>
+    <a type="submit" href="/audio" class="btn btn-warning">Посмотреть аудио</a>
     {% for note in user.user_notes %}
         <div class="my-3 p-3 bg-body rounded shadow-sm">
             <h6 class="border-bottom pb-2 mb-0">{{ note.id }}</h6>

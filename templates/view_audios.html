@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block title %}
+    Ваши аудио
+{% endblock %}
+
+{% block body %}
+    <h1>Ваши аудио</h1>
+    <form method="post" action="" enctype="multipart/form-data">
+        {{ form.csrf_token() }}
+        {{ form.audio(class="btn btn-info") }}
+        {{ form.submit(class="btn btn-success") }}
+    </form>
+    {% for audio in user_audios %}
+        <audio controls><source id="audio_player" src="data:audio/mp3;base64, {{ audio.audio_data }}"></audio>
+        <a type="submit" name="delete" href="/delete_audio/{{ audio.id }}" class="btn btn-danger">Удалить</a>
+        <a type="submit" name="delete" href="/detalied_audio/{{ audio.id }}" class="btn btn-info">Подробнее</a>
+    {% endfor %}
+{% endblock %}

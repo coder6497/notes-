@@ -3,25 +3,29 @@ import os
 import time
 
 from PIL import Image
-from flask import Flask, render_template, redirect
-from flask_login import LoginManager, UserMixin, login_required, login_user, current_user, logout_user
+from flask import Flask
+from flask import render_template, redirect
 from flask_sqlalchemy import SQLAlchemy
-from flask_uploads import UploadSet, configure_uploads, IMAGES, UploadNotAllowed
+from flask_login import login_required, login_user, current_user, logout_user, UserMixin, LoginManager
+from flask_uploads import UploadSet, IMAGES, AUDIO, configure_uploads, UploadNotAllowed
+from werkzeug.security import check_password_hash, generate_password_hash
 from flask_wtf import FlaskForm
-from werkzeug.security import generate_password_hash, check_password_hash
 from wtforms import StringField, SubmitField, TextAreaField, FileField, PasswordField, BooleanField
 from wtforms.validators import DataRequired, EqualTo
 
 app = Flask(__name__)
+db = SQLAlchemy(app)
 app.config['SECRET_KEY'] = 'key'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///notes_base.db'
-app.config['UPLOADED_PHOTOS_DEST'] = os.path.join(os.getcwd(), f'static/images/')
-db = SQLAlchemy(app)
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['UPLOADED_PHOTOS_DEST'] = os.path.join(os.getcwd(), 'static/images/')
+app.config['UPLOADED_AUDIOS_DEST'] = os.path.join(os.getcwd(), 'static/audio/')
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 
 photos = UploadSet('photos', IMAGES)
-configure_uploads(app, photos)
+audios = UploadSet('audios', AUDIO)
+configure_uploads(app, (photos, audios))
 try:
     os.mkdir('static/images')
     os.mkdir('static/resized_images')
@@ -29,15 +33,24 @@ except FileExistsError:
     pass
 
 
-class Form(FlaskForm):
-    title = StringField("Заголовок", validators=[DataRequired()])
-    text = TextAreaField("Текст", validators=[DataRequired()])
-    submit = SubmitField("Сохранить")
+class User(db.Model, UserMixin):
+    id = db.Column(db.Integer, primary_key=True)
+    login = db.Column(db.String())
+    email = db.Column(db.String())
+    phone = db.Column(db.String())
+    password_hash = db.Column(db.String())
+    user_notes = db.relationship('Notes')
+    user_images = db.relationship('Images')
+    user_audios = db.relationship('Audios')
 
+    def __repr__(self):
+        return "<{}:{}>".format(self.id, self.login)
 
-class ImageForm(FlaskForm):
-    image = FileField()
-    submit = SubmitField("Сохранить")
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
 
 
 class Notes(db.Model):
@@ -64,6 +77,29 @@ class Images(db.Model):
         return "<Images {}r>".format(self.id)
 
 
+class Audios(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    audio_data = db.Column(db.String())
+    name = db.Column(db.String())
+    size_on_disk = db.Column(db.String())
+    time = db.Column(db.String())
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+
+    def __repr__(self):
+        return "<Audios {}r".format(self.id)
+
+
+class Form(FlaskForm):
+    title = StringField("Заголовок", validators=[DataRequired()])
+    text = TextAreaField("Текст", validators=[DataRequired()])
+    submit = SubmitField("Сохранить")
+
+
+class ImageForm(FlaskForm):
+    image = FileField()
+    submit = SubmitField("Сохранить")
+
+
 class LoginForm(FlaskForm):
     login = StringField("Ваш логин: ", validators=[DataRequired()])
     password = PasswordField("Пароль: ", validators=[DataRequired()])
@@ -74,27 +110,15 @@ class LoginForm(FlaskForm):
 class RegistrtionForm(FlaskForm):
     login = StringField("Логин: ", validators=[DataRequired()])
     email = StringField("Email: ", validators=[DataRequired()])
+    phone = StringField("Номер телефона: ", validators=[DataRequired()])
     password = PasswordField('Пароль: ', validators=[DataRequired()])
     repeat_password = PasswordField('Повторите пароль', validators=[DataRequired(), EqualTo('password')])
     submit = SubmitField("Зарегестрироваться")
 
 
-class User(db.Model, UserMixin):
-    id = db.Column(db.Integer, primary_key=True)
-    login = db.Column(db.String())
-    email = db.Column(db.String())
-    password_hash = db.Column(db.String())
-    user_notes = db.relationship('Notes')
-    user_images = db.relationship('Images')
-
-    def __repr__(self):
-        return "<{}:{}>".format(self.id, self.login)
-
-    def set_password(self, password):
-        self.password_hash = generate_password_hash(password)
-
-    def check_password(self, password):
-        return check_password_hash(self.password_hash, password)
+class AudioForm(FlaskForm):
+    audio = FileField()
+    submit = SubmitField("Сохранить")
 
 
 @login_manager.user_loader
@@ -108,6 +132,8 @@ def main():
     if len(os.listdir('static/images')) or len(os.listdir('static/resized_images')) > 5:
         list(map(lambda x: os.remove('static/images/' + x), os.listdir('static/images')))
         list(map(lambda x: os.remove('static/resized_images/' + x), os.listdir('static/resized_images')))
+    if len(os.listdir('static/audio')) > 5:
+        list(map(lambda x: os.remove('static/audio/' + x), os.listdir('static/audio')))
     return render_template('main.html')
 
 
@@ -193,6 +219,44 @@ def detailed_image(id):
     return render_template('detalied_img.html', images=img_to_show, about=about)
 
 
+@app.route('/audio', methods=["GET", "POST"])
+@login_required
+def audio():
+    form = AudioForm()
+    if form.validate_on_submit():
+        audios.save(form.audio.data)
+        audio_list = sorted(os.listdir('static/audio'), key=lambda x: os.path.getctime('static/audio/' + x),
+                            reverse=True)
+        with open('static/audio/' + audio_list[0], 'rb') as f:
+            audio_code = base64.b64encode(f.read()).decode('utf-8')
+        audios_base = Audios(audio_data=audio_code,
+                             name=os.path.basename('static/audio/' + audio_list[0]),
+                             size_on_disk=str(round(os.stat('static/audio/' + audio_list[0]).st_size / 1024)) + "КБ",
+                             time=time.ctime(os.path.getctime('static/audio/' + audio_list[0])),
+                             user_id=current_user.id)
+        db.session.add(audios_base)
+        db.session.commit()
+    return render_template('view_audios.html', form=form, user_audios=current_user.user_audios)
+
+
+@app.route('/delete_audio/<int:id>')
+def delete_audio(id):
+    audio_to_delete = Audios.query.filter_by(id=id).first()
+    db.session.delete(audio_to_delete)
+    db.session.commit()
+    return redirect('/audio')
+
+
+@app.route('/detalied_audio/<int:id>')
+def detalied_audio(id):
+    audio_to_show = Audios.query.filter_by(id=id).first()
+    about_audio = {}
+    about_audio["Имя"] = audio_to_show.name
+    about_audio["Время"] = audio_to_show.time
+    about_audio["Размер"] = audio_to_show.size_on_disk
+    return render_template('detalied_audio.html', audio=audio_to_show, about=about_audio)
+
+
 @app.route('/login', methods=["GET", "POST"])
 def login():
     form = LoginForm()
@@ -217,11 +281,8 @@ def logout():
 def registration():
     form = RegistrtionForm()
     if form.validate_on_submit():
-        login = form.login.data
-        email = form.email.data
-        password = form.password.data
-        user = User(login=login, email=email)
-        user.set_password(password)
+        user = User(login=form.login.data, email=form.email.data, phone=form.phone.data)
+        user.set_password(form.password.data)
         db.session.add(user)
         db.session.commit()
         return redirect('/')
@@ -233,6 +294,7 @@ def about():
     about_user = {}
     about_user["Логин"] = current_user.login
     about_user["Почта"] = current_user.email
+    about_user["Номер телефона"] = current_user.phone
     return render_template('about.html', user=current_user, about_user=about_user)
 
 

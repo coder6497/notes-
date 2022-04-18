@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block title %}
+    ...
+{% endblock %}
+
+{% block body %}
+    <h1>Подробнее о файле</h1>
+    <audio controls><source id="audio_player" src="data:audio/mp3;base64, {{ audio.audio_data }}"></audio>
+    <div class="alert alert-dark" role="alert">
+        {% for key, value in about.items() %}
+            <ul><li>{{ key }}: {{ value }}</li></ul>
+        {% endfor %}
+    </div>
+{% endblock %}
