@@ -5,11 +5,11 @@ import time
 from PIL import Image
 from flask import Flask
 from flask import render_template, redirect
-from flask_sqlalchemy import SQLAlchemy
 from flask_login import login_required, login_user, current_user, logout_user, UserMixin, LoginManager
+from flask_sqlalchemy import SQLAlchemy
 from flask_uploads import UploadSet, IMAGES, AUDIO, configure_uploads, UploadNotAllowed
-from werkzeug.security import check_password_hash, generate_password_hash
 from flask_wtf import FlaskForm
+from werkzeug.security import check_password_hash, generate_password_hash
 from wtforms import StringField, SubmitField, TextAreaField, FileField, PasswordField, BooleanField
 from wtforms.validators import DataRequired, EqualTo
 
@@ -38,6 +38,7 @@ class User(db.Model, UserMixin):
     login = db.Column(db.String())
     email = db.Column(db.String())
     phone = db.Column(db.String())
+    avatar = db.Column(db.String())
     password_hash = db.Column(db.String())
     user_notes = db.relationship('Notes')
     user_images = db.relationship('Images')
@@ -98,6 +99,11 @@ class Form(FlaskForm):
 class ImageForm(FlaskForm):
     image = FileField()
     submit = SubmitField("Сохранить")
+
+
+class AvatarForm(FlaskForm):
+    image = FileField()
+    submit = SubmitField("Загрузить")
 
 
 class LoginForm(FlaskForm):
@@ -295,7 +301,25 @@ def about():
     about_user["Логин"] = current_user.login
     about_user["Почта"] = current_user.email
     about_user["Номер телефона"] = current_user.phone
-    return render_template('about.html', user=current_user, about_user=about_user)
+    form = AvatarForm()
+    if form.validate_on_submit():
+        try:
+            photos.save(form.image.data)
+            orig_list = sorted(os.listdir('static/images'), key=lambda x: os.path.getctime('static/images/' + x),
+                               reverse=True)
+            avatar_img = Image.open('static/images/' + orig_list[0])
+            avatar_img.thumbnail((150, 150))
+            avatar_img.save('static/resized_images/' + orig_list[0])
+            avatar_list = sorted(os.listdir('static/resized_images'),
+                                 key=lambda x: os.path.getctime('static/resized_images/' + x), reverse=True)
+            with open('static/resized_images/' + avatar_list[0], 'rb') as f:
+                avatar = base64.b64encode(f.read()).decode('utf-8')
+            current_user.avatar = avatar
+            db.session.commit()
+        except UploadNotAllowed:
+            pass
+    return render_template('about.html', user=current_user, about_user=about_user, form=form,
+                           user_avatar=current_user.avatar)
 
 
 if __name__ == '__main__':
