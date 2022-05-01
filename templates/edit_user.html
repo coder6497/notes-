@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block title %}
+    Изменить
+{% endblock %}
+
+{% block body %}
+    <h1>Изменить данные</h1>
+    <form method="post" action="" enctype="multipart/form-data">
+        {{ form.csrf_token() }}
+        {{ form.login.label() }}
+        <br>
+        {{ form.login(class="form-control")}}
+        <br>
+        {{ form.email.label() }}
+        <br>
+        {{ form.email(class="form-control") }}
+        <br>
+        {{ form.phone.label() }}
+        <br>
+        {{ form.phone(class="form-control") }}
+        <br>
+        {{ form.submit(class="btn btn-success") }}
+    </form>
+{% endblock %}

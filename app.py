@@ -122,6 +122,13 @@ class RegistrtionForm(FlaskForm):
     submit = SubmitField("Зарегестрироваться")
 
 
+class EditUser(FlaskForm):
+    login = StringField("Логин: ", validators=[DataRequired()])
+    email = StringField("Email: ", validators=[DataRequired()])
+    phone = StringField("Номер телефона: ", validators=[DataRequired()])
+    submit = SubmitField("Изменить")
+
+
 class AudioForm(FlaskForm):
     audio = FileField()
     submit = SubmitField("Сохранить")
@@ -320,6 +327,18 @@ def about():
             pass
     return render_template('about.html', user=current_user, about_user=about_user, form=form,
                            user_avatar=current_user.avatar)
+
+
+@app.route('/edit_user/', methods=["GET", "POST"])
+@login_required
+def edit_user():
+    form = EditUser()
+    if form.validate_on_submit:
+        current_user.login = form.login.data
+        current_user.phone = form.phone.data
+        current_user.email = form.email.data
+        db.session.commit()
+    return render_template("edit_user.html", form=form)
 
 
 if __name__ == '__main__':
