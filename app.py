@@ -14,12 +14,14 @@ from wtforms import StringField, SubmitField, TextAreaField, FileField, Password
 from wtforms.validators import DataRequired, EqualTo
 
 app = Flask(__name__)
-db = SQLAlchemy(app)
 app.config['SECRET_KEY'] = 'key'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///notes_base.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOADED_PHOTOS_DEST'] = os.path.join(os.getcwd(), 'static/images/')
 app.config['UPLOADED_AUDIOS_DEST'] = os.path.join(os.getcwd(), 'static/audio/')
+db = SQLAlchemy(app)
+with app.app_context():
+    db.create_all()
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 
